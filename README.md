@@ -21,8 +21,8 @@ status by proportion of pixels in blue channel versus red channel
 
 - Model features:
 	- Count individual cells
-	- Calculate individual cell blue:red ratio via individual cell mask
-		- Report number of cells and individual infection classficiations
+	- Calculate individual cell infected proportion via red & blue pixels within individual cell mask
+		- Proportion outcomes determine infection classification
 
 - Eventual Outcomes:
 	- Extrapolate population dynamics
