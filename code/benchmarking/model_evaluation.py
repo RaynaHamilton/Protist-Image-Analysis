@@ -20,8 +20,8 @@ predicted_df_hlt = pd.read_csv("/Users/kjehickman/Documents/Research/parasites/c
 predicted_df_km = pd.read_csv("/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/master_csvs/kmeans_master_cleaned_na.csv") # km
 predicted_df_km_new = pd.read_csv("/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/master_csvs/kmeans_new_master_cleaned_na.csv") # km_new
 
-predicted_df_hlt.info()
-manual_df.info()
+# predicted_df_hlt.info()
+# manual_df.info()
 
 ## Manual & Model Stats
 manual_counts = [28, 13, 15, 29, 36, 10, 28, 21, 32, 21, 33, 20, 44, 41] # 14
@@ -244,15 +244,6 @@ def evaluate_method(manual_counts, predicted_counts, model_count_labels, manual_
         "Combined Score": combined_score
     }
 
-
-
-# # testing
-# hlt_f1 = align_labels_F1(manual_df, predicted_df_hlt)
-# print(hlt_f1)
-# # hlt_f1.info()
-# # testing
-# hlt_results = evaluate_cell_count_F1(hlt_f1)
-# print(hlt_results)
 
 # EVALUATE MODELS
 
@@ -489,7 +480,7 @@ for model_name, evaluation in model_results.items():
 model_eval_df = pd.DataFrame(model_data)
 
 # Save to CSV
-output_file = "/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/model_evaluation_results_weight25-75_nonzero1_classes_countF1.csv"
+output_file = "/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/model_evaluation_results_weight25-75_nonzero0_classes_countF1.csv"
 model_eval_df.to_csv(output_file, index=False)
 
 print(f"Results saved to {output_file}")
