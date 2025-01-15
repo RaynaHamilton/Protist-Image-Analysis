@@ -20,8 +20,8 @@ predicted_df_hlt = pd.read_csv("/Users/kjehickman/Documents/Research/parasites/c
 predicted_df_km = pd.read_csv("/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/master_csvs/kmeans_master_cleaned_na.csv") # km
 predicted_df_km_new = pd.read_csv("/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/master_csvs/kmeans_new_master_cleaned_na.csv") # km_new
 
-# predicted_df_comb_w.info()
-# manual_df.info()
+predicted_df_hlt.info()
+manual_df.info()
 
 ## Manual & Model Stats
 manual_counts = [28, 13, 15, 29, 36, 10, 28, 21, 32, 21, 33, 20, 44, 41] # 14
@@ -31,7 +31,7 @@ predicted_counts_gmm = [2, 1, 6, 4, 6, 4, 6, 1, 2, 1, 1, 2, 0, 1] # 13 + 1
 predicted_counts_hlt = [10, 21, 17, 13, 12, 10, 10, 8, 22, 7, 12, 14, 7, 8] # 14
 predicted_counts_km = [1, 5, 11, 8, 8, 4, 6, 6, 7, 2, 4, 5, 12, 18] # 14
 predicted_counts_km_new = [3, 0, 2, 3, 3, 2, 11, 0, 9, 0, 2, 5, 8, 4] # 11 + 3
-all_labels = ["uninfected", "early_infected", "late_infected", "dead", "missed", "unlabeled"]
+all_labels = ["uninfected", "early_infected", "late_infected", "dead", "false_negative", "false_positive"] # "missed", "unlabeled"
 
 
 # READ IN FUNCTIONS
@@ -41,8 +41,8 @@ all_labels = ["uninfected", "early_infected", "late_infected", "dead", "missed",
 def align_labels(manual_df, predicted_df):
     '''
     This function takes two dataframes with labeled cells and deciphers matched, missed, and misclassified cells. If the two dataframes
-    have differing number of observations, this function reconciles those differences by substituting "missed" for cells in the manual 
-    set that were not predicted, and "unlabeled" for cells that were erroneously predicted.
+    have differing number of observations, this function reconciles those differences by substituting "missed" (false_negative) for cells in the manual 
+    set that were not predicted, and "unlabeled" (false positives) for cells that were erroneously predicted.
     Inputs: 
     manual_df = Manually curated cells with colname, "Matched_Manual", for cell ID and "Status" for classification status.
     predicted_df = Predicted cells with colname, "Matched_Manual", for cell ID and "Status" for classification status.
@@ -78,7 +78,7 @@ def align_labels(manual_df, predicted_df):
         # append missed cell status to manual_labels
         manual_labels.append(row["Status"])
         # append "missed" for status in missed cell index
-        predicted_labels.append("missed")
+        predicted_labels.append("false_negative")
     print("Missed cells:", len(missed_cells))
     # print("Manual len after missing:", len(manual_labels))
     # print("Predicted len after missing:", len(predicted_labels))
@@ -88,7 +88,7 @@ def align_labels(manual_df, predicted_df):
     misidentified_cells = predicted_df[predicted_df["Manual_Match"].isna()]
     for _, row in misidentified_cells.iterrows():
         # note unlabeled for manual set
-        manual_labels.append("unlabeled")
+        manual_labels.append("false_positive")
         # add status for misidentified cell in the indexed row of predicted_labels
         predicted_labels.append(row["Status"])
     print("Misidentified cells:", len(misidentified_cells))
@@ -97,8 +97,47 @@ def align_labels(manual_df, predicted_df):
 
     return manual_labels, predicted_labels
 
+def align_labels_F1(manual_df, predicted_df):
+    '''
+    This function takes the manual and predicted dataframes, identifies the manual cells missed by the model (False Negatives),
+    and makes an array for the predicted_df with "FN" entries that match the number of "missed" cells by the model.
+    Input: manual dataframe, predicted dataframe (make sure predicted_df is the master version with an "F1" column)
+    '''
+    predicted_tfp = predicted_df['F1'].tolist()
+    # predicted_tfp = [] # set this as all values in predicted_df$F1
+    # Get the set of manual matches in both dataframes
+    manual_matches = set(manual_df['Manual_Match'])
+    predicted_matches = set(predicted_df['Manual_Match'].dropna())  # Drop NaNs before comparing
+    # Find manual matches that are missing in the predicted matches (False Negatives)
+    missed_manual_matches = manual_matches - predicted_matches
+    # Append "FN" for each missed manual match
+    predicted_tfp.extend(["FN"] * len(missed_manual_matches))
+    # Update the F1 column in the predicted_df
+    # predicted_df['F1'] = predicted_tfp
+    # print(len(predicted_tfp))
+
+    return predicted_tfp
+
+
 
 ## Evaluate individual model scores
+def evaluate_cell_count_F1(predicted_tfp):
+    '''
+    This function calculates F1 scores based on counts for each model.
+    Inputs: pass the df$F1 column, containing entries for either "TP", "FP", or "FN".
+    Outputs: F1, precision, recall scores for calculated matches
+    '''
+    predicted_tp = predicted_tfp.count('TP') # np.sum(np.array(predicted_tfp == "TP")) # col 9 is "F1" in hlt_master
+    predicted_fp = predicted_tfp.count('FP') # np.sum(np.array(predicted_tfp['F1'] == "FP")) # col 9 is "F1" in hlt_master
+    predicted_fn = predicted_tfp.count('FN') # np.sum(np.array(predicted_tfp['F1'] == "FN")) # col 9 is "F1" in hlt_master
+    precision = (predicted_tp/(predicted_tp + predicted_fp))
+    recall = (predicted_tp/(predicted_tp + predicted_fn))
+    f1 = (2*(precision*recall)/(precision+recall))
+    
+    # return f1, precision, recall 
+    return {"F1": f1, "Precision": precision, "Recall": recall}
+
+
 
 def evaluate_cell_count(manual_counts, predicted_counts):
     '''
@@ -110,6 +149,7 @@ def evaluate_cell_count(manual_counts, predicted_counts):
     # Calculate Mean Absolute Error (MAE)
     mae = np.mean(np.abs(np.array(predicted_counts) - np.array(manual_counts)))
     # Calculate False Negative Rate (FNR) and False Positive Rate (FPR)
+        # removed these because they were uninformative, from raw counts
     false_negatives = np.sum(np.array(predicted_counts) < np.array(manual_counts))
     false_positives = np.sum(np.array(predicted_counts) > np.array(manual_counts))
     total_cells = np.sum(manual_counts)
@@ -132,7 +172,7 @@ def evaluate_classification(manual_labels, predicted_labels):
     # Confusion Matrix
     cm = confusion_matrix(manual_labels, predicted_labels, labels=all_labels)
     # Classification Report (includes F1 score, precision, recall for each class)
-    report = classification_report(manual_labels, predicted_labels, labels=all_labels, output_dict=True, zero_division=1)
+    report = classification_report(manual_labels, predicted_labels, labels=all_labels, output_dict=True, zero_division=0)
 
     return {"Confusion Matrix": cm, "Classification Report": report}
 
@@ -152,37 +192,40 @@ def evaluate_clustering(manual_labels, predicted_labels):
 
 
 ## 
-def weighted_score(cell_count_metrics, classification_report, weight_count=0.5, weight_classification=0.5):
+def weighted_score(cell_count_metrics, cell_count_f1, classification_report, weight_count=0.5, weight_classification=0.5):
     '''
     This function produces a weighted score based on the performance of the model. The score is comprised of weights
     for both count and classification, which must total 1.0.
     Inputs: 
-    manual_labels = array of total cell classification described across all images, concatenated e.g. ['dead', 'early_infected', 'late_infected', 'missed']
-    predicted_labels = array of total cell classification predicted across all images, concatenated e.g. ['unlabeled', 'uninfected', 'late_infected', 'dead']
     '''
     # Extract relevant metrics
+    count_f1 = cell_count_f1["F1"]
     count_score = 1 - cell_count_metrics["MAE"]  # Assuming lower MAE is better
     f1_scores = [classification_report[class_]['f1-score'] for class_ in classification_report if class_ not in ('accuracy', 'macro avg', 'weighted avg')]
     classification_score = np.mean(f1_scores)  # Average F1 score for all classes
 
     # Combine scores with weights
-    combined_score = (weight_count * count_score) + (weight_classification * classification_score)
+    combined_score = (weight_count * count_score) + (weight_count * count_f1) + (weight_classification * classification_score)
     return combined_score
 
 
 ## Combine all functions into a single evaluation function
-def evaluate_method(manual_counts, predicted_counts, manual_labels, predicted_labels):
+def evaluate_method(manual_counts, predicted_counts, model_count_labels, manual_labels, predicted_labels):
     '''
     This function combines cell count and classification methods to holistically evaluate the performance of a model's accuracy in both metrics.
     It computes MEA, FPR, FNR, Confusion Matrices and Reports, ARI, and produces a weighted score considering count and classification performance.
     Inputs: 
     manual_count = array of total cells counted across all images e.g. [10, 45, 13, 25, 30]
     predicted_counts = array of total cells predicted across all images e.g. [10, 45, 13, 25, 30]
+    model_count_labels = output from align_labels_F1()--a list of "FP", "FN", "TP" for all cell observations (incl. FN for missing from man)
     manual_labels = array of total cell classification described across all images, concatenated e.g. ['dead', 'early_infected', 'late_infected', 'missed']
     predicted_labels = array of total cell classification predicted across all images, concatenated e.g. ['unlabeled', 'uninfected', 'late_infected', 'dead']
     '''
     # Cell Count Metrics
     count_metrics = evaluate_cell_count(manual_counts, predicted_counts)
+    
+    # Cell Count F1, precision, recall scores
+    cell_count_f1 = evaluate_cell_count_F1(model_count_labels)
 
     # Classification Metrics
     class_metrics = evaluate_classification(manual_labels, predicted_labels)
@@ -191,16 +234,25 @@ def evaluate_method(manual_counts, predicted_counts, manual_labels, predicted_la
     ari = evaluate_clustering(manual_labels, predicted_labels)
 
     # Weighted Combined Score
-    combined_score = weighted_score(count_metrics, class_metrics["Classification Report"], weight_count=0.25, weight_classification=0.75) # 
+    combined_score = weighted_score(count_metrics, cell_count_f1, class_metrics["Classification Report"], weight_count=0.25, weight_classification=0.75) # 
 
     return {
         "Count Metrics": count_metrics,
+        "Count Scores": cell_count_f1,
         "Classification Metrics": class_metrics,
-        "ARI": ari,
+        # "ARI": ari,
         "Combined Score": combined_score
     }
 
 
+
+# # testing
+# hlt_f1 = align_labels_F1(manual_df, predicted_df_hlt)
+# print(hlt_f1)
+# # hlt_f1.info()
+# # testing
+# hlt_results = evaluate_cell_count_F1(hlt_f1)
+# print(hlt_results)
 
 # EVALUATE MODELS
 
@@ -218,6 +270,20 @@ manual_labels_km, predicted_labels_km = align_labels(manual_df, predicted_df_km)
     ### call km_new--LOOKING GOOD
 manual_labels_km_new, predicted_labels_km_new = align_labels(manual_df, predicted_df_km_new) # missed: 335; misidentified: 16
 
+## align F1 columns for evluation of counts
+    ### call comb_w
+comb_w_f1 = align_labels_F1(manual_df, predicted_df_comb_w)
+    ### call comb_wo
+comb_wo_f1 = align_labels_F1(manual_df, predicted_df_comb_wo)
+    ### call gmm
+gmm_f1 = align_labels_F1(manual_df, predicted_df_gmm)
+    ### call hlt
+hlt_f1 = align_labels_F1(manual_df, predicted_df_hlt)
+    ### call km
+km_f1 = align_labels_F1(manual_df, predicted_df_km)
+    ### call km_new
+km_new_f1 = align_labels_F1(manual_df, predicted_df_km_new)
+
 
 # Evaluate ALL models
 
@@ -227,17 +293,17 @@ manual_labels_km_new, predicted_labels_km_new = align_labels(manual_df, predicte
         # F1 Weighted: 0.01865182578103027
         # ARI: 0.2751711247064386
         # Combined score: -6.860558086115751
-comb_w_evaluation = evaluate_method(manual_counts, predicted_counts_comb_w, manual_labels_comb_w, predicted_labels_comb_w)
+comb_w_evaluation = evaluate_method(manual_counts, predicted_counts_comb_w, comb_w_f1, manual_labels_comb_w, predicted_labels_comb_w)
 print(comb_w_evaluation)
 comb_w_disp = ConfusionMatrixDisplay(confusion_matrix=comb_w_evaluation['Classification Metrics']['Confusion Matrix'], display_labels=all_labels)
 comb_w_disp.plot()
 # plt.show()
-plt.suptitle('Combined_w Evaluation (W: 25-75, NZ: 0)', fontsize=15, horizontalalignment='center')
+plt.suptitle('Combined_w Evaluation', fontsize=15, horizontalalignment='center')
 plt.ylabel('True Label', fontsize=12)
 plt.xlabel('Predicted Label', fontsize=12)
 plt.xticks(rotation=30)
 plt.tight_layout()
-plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/confusion_matrices/comb_w_weighted25-75_nonzero0.png', dpi = (150))
+plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/confusion_matrices/comb_w.png', dpi = (150))
 
     ## Combined wo/remove_overlapping_lines()--Combined score: -28.73416246418463
         # Count Metrics: 'MAE': 72.85714285714286, 'FNR': 0.01078167115902965, 'FPR': 0.026954177897574125
@@ -245,17 +311,17 @@ plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/
         # F1 Weighted: 0.0030776558676839255
         # ARI: 0.29494226779872973
         # Combined score: -28.73416246418463
-comb_wo_evaluation = evaluate_method(manual_counts, predicted_counts_comb_wo, manual_labels_comb_wo, predicted_labels_comb_wo)
+comb_wo_evaluation = evaluate_method(manual_counts, predicted_counts_comb_wo, comb_wo_f1, manual_labels_comb_wo, predicted_labels_comb_wo)
 print(comb_wo_evaluation)
 comb_wo_disp = ConfusionMatrixDisplay(confusion_matrix=comb_wo_evaluation['Classification Metrics']['Confusion Matrix'], display_labels=all_labels)
 comb_wo_disp.plot()
 # plt.show()
-plt.suptitle('Combined_wo Evaluation (W: 25-75, NZ: 0)', fontsize=15, horizontalalignment='center')
+plt.suptitle('Combined_wo Evaluation', fontsize=15, horizontalalignment='center')
 plt.ylabel('True Label', fontsize=12)
 plt.xlabel('Predicted Label', fontsize=12)
 plt.xticks(rotation=30)
 plt.tight_layout()
-plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/confusion_matrices/comb_wo_weighted25-75_nonzero0.png', dpi = (150))
+plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/confusion_matrices/comb_wo.png', dpi = (150))
 
     ## Gaussian Mixed Model
         # Count Metrics: 'MAE': 23.857142857142858, 'FNR': 0.03773584905660377, 'FPR': 0.0
@@ -263,17 +329,17 @@ plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/
         # F1 Weighted: 0.0333219217163072
         # ARI: 0.06365472758616385
         # Combined score: -9.116422360248448
-gmm_evaluation = evaluate_method(manual_counts, predicted_counts_gmm, manual_labels_gmm, predicted_labels_gmm)
+gmm_evaluation = evaluate_method(manual_counts, predicted_counts_gmm, gmm_f1, manual_labels_gmm, predicted_labels_gmm)
 print(gmm_evaluation)
 gmm_disp = ConfusionMatrixDisplay(confusion_matrix=gmm_evaluation['Classification Metrics']['Confusion Matrix'], display_labels=all_labels)
 gmm_disp.plot()
 # plt.show()
-plt.suptitle('GMM Evaluation (W: 25-75, NZ: 0)', fontsize=15, horizontalalignment='center')
+plt.suptitle('GMM Evaluation', fontsize=15, horizontalalignment='center')
 plt.ylabel('True Label', fontsize=12)
 plt.xlabel('Predicted Label', fontsize=12)
 plt.xticks(rotation=30)
 plt.tight_layout()
-plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/confusion_matrices/gmm_weighted25-75_nonzero0.png', dpi = (150))
+plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/confusion_matrices/gmm.png', dpi = (150))
 
     ## Hough Line Transform
         # Count Metrics: 'MAE': 15.714285714285714, 'FNR': 0.029649595687331536, 'FPR': 0.005390835579514825
@@ -281,17 +347,17 @@ plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/
         # F1 Weighted: 0.2282488031454518
         # ARI: 0.11616712591550578
         # Combined score: -5.814484655656723
-hlt_evaluation = evaluate_method(manual_counts, predicted_counts_hlt, manual_labels_hlt, predicted_labels_hlt)
+hlt_evaluation = evaluate_method(manual_counts, predicted_counts_hlt, hlt_f1, manual_labels_hlt, predicted_labels_hlt)
 print(hlt_evaluation)
 hlt_disp = ConfusionMatrixDisplay(confusion_matrix=hlt_evaluation['Classification Metrics']['Confusion Matrix'], display_labels=all_labels)
 hlt_disp.plot()
 # plt.show()
-plt.suptitle('HLT Evaluation (W: 25-75, NZ: 0)', fontsize=15, horizontalalignment='center')
+plt.suptitle('HLT Evaluation', fontsize=15, horizontalalignment='center')
 plt.ylabel('True Label', fontsize=12)
 plt.xlabel('Predicted Label', fontsize=12)
 plt.xticks(rotation=30)
 plt.tight_layout()
-plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/confusion_matrices/hlt_weighted25-75_nonzero0.png', dpi = (150))
+plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/confusion_matrices/hlt.png', dpi = (150))
 
     ## Kmeans (original)
         # Count Metrics: 'MAE': 19.571428571428573, 'FNR': 0.03773584905660377, 'FPR': 0.0
@@ -299,17 +365,17 @@ plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/
         # F1 Weighted: 0.02154692742001473
         # ARI: 0.284305283474167
         # Combined score: -7.409287000128585
-km_evaluation = evaluate_method(manual_counts, predicted_counts_km, manual_labels_km, predicted_labels_km)
+km_evaluation = evaluate_method(manual_counts, predicted_counts_km, km_f1, manual_labels_km, predicted_labels_km)
 print(km_evaluation)
 km_disp = ConfusionMatrixDisplay(confusion_matrix=km_evaluation['Classification Metrics']['Confusion Matrix'], display_labels=all_labels)
 km_disp.plot()
 # plt.show()
-plt.suptitle('Kmeans Evaluation (W: 25-75, NZ: 0)', fontsize=15, horizontalalignment='center')
+plt.suptitle('Kmeans Evaluation', fontsize=15, horizontalalignment='center')
 plt.ylabel('True Label', fontsize=12)
 plt.xlabel('Predicted Label', fontsize=12)
 plt.xticks(rotation=30)
 plt.tight_layout()
-plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/confusion_matrices/km_weighted25-75_nonzero0.png', dpi = (150))
+plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/confusion_matrices/km.png', dpi = (150))
 
     ## Kmeans w/bounded box (new)
         # Count Metrics: 'MAE': 22.785714285714285, 'FNR': 0.03773584905660377, 'FPR': 0.0
@@ -317,17 +383,17 @@ plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/
         # F1 Weighted: 0.05382205224538689
         # ARI: 0.10775953384140045
         # Combined score: -8.670309534716313
-km_new_evaluation = evaluate_method(manual_counts, predicted_counts_km_new, manual_labels_km_new, predicted_labels_km_new)
+km_new_evaluation = evaluate_method(manual_counts, predicted_counts_km_new, km_new_f1, manual_labels_km_new, predicted_labels_km_new)
 print(km_new_evaluation)
 km_new_disp = ConfusionMatrixDisplay(confusion_matrix=km_new_evaluation['Classification Metrics']['Confusion Matrix'], display_labels=all_labels)
 km_new_disp.plot()
 # plt.show()
-plt.suptitle('Kmeans_new Evaluation (W: 25-75, NZ: 0)', fontsize=15, horizontalalignment='center')
+plt.suptitle('Kmeans_new Evaluation', fontsize=15, horizontalalignment='center')
 plt.ylabel('True Label', fontsize=12)
 plt.xlabel('Predicted Label', fontsize=12)
 plt.xticks(rotation=30)
 plt.tight_layout()
-plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/confusion_matrices/km_new_weighted25-75_nonzero0.png', dpi = (150))
+plt.savefig('/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/confusion_matrices/km_new.png', dpi = (150))
 
 
 
@@ -353,6 +419,9 @@ for model_name, evaluation in model_results.items():
     fnr = evaluation['Count Metrics']['FNR']
     fpr = evaluation['Count Metrics']['FPR']
     r2 = evaluation['Count Metrics']['R^2']
+    count_f1 = evaluation['Count Scores']['F1']
+    count_precision = evaluation['Count Scores']['Precision']
+    count_recall = evaluation['Count Scores']['Recall']
     
     # Extract metrics from Classification Metrics
     # confusion_matrix = evaluation['Classification Metrics']['Confusion Matrix']
@@ -386,7 +455,10 @@ for model_name, evaluation in model_results.items():
     model_data.append({
         "Model": model_name,
         "MAE": mae,
-        "R^2": r2,
+        "Count_F1": count_f1,
+        "Count_precision": count_precision,
+        "Count_recall": count_recall,
+        # "R^2": r2,
         # "FNR": fnr,
         # "FPR": fpr,
         "Uninf_F1": f1_uninfected,
@@ -417,7 +489,7 @@ for model_name, evaluation in model_results.items():
 model_eval_df = pd.DataFrame(model_data)
 
 # Save to CSV
-output_file = "/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/model_evaluation_results_weight25-75_nonzero1_classes.csv"
+output_file = "/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/model_evaluation_results_weight25-75_nonzero1_classes_countF1.csv"
 model_eval_df.to_csv(output_file, index=False)
 
 print(f"Results saved to {output_file}")
