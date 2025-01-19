@@ -29,12 +29,26 @@ status by proportion of pixels in blue channel versus red channel
 		- Changes in infection ratios over time series facilitates inference about shifts in 
 mixed-community population dynamics
 
+-----------------------------------------------------------------------------------------------------
 - Repository organization: 
-	- "code": 
-		- "benchmarking": includes code for cleaning raw csvs (result of running .ipynb files from 
-"../code/final_models") in "data_cleaning"; model_evaluation.py evaluates performance using 
-"../../data/master_csvs/*.csv"; model_evaluation_results_weight25-75_nonzero0_classes.csv is output from 
-model_evaluation.py
-	- "data": 
-	- "figures":
-	- "deprecated":
+	- **code**: 
+		- **benchmarking**: "data_cleaning" includes code for cleaning raw csvs (result of running .ipynb 
+files 
+from 
+**../code/final_models**); **model_evaluation.py** evaluates performance using 
+"./master_csvs/*.csv"; **model_evaluation_statistics.csv** is output from 
+model_evaluation_F1.py
+		- **deprecated**: outdated code from various stages of model development
+		- **final_models**: code for final versions of each 6 models
+	- **data**: 
+		- **test_images**: set of ".jpg" files that models were trained on (note, models were only evaluated 
+on AS*.csv files)
+		- **experimental_metadata.csv**: metadata collected during lab experiment
+		- **model_evaluation_statistics.csv**: output from
+"../code/benchmarking/model_evaluation_F1.py"
+	- **figures**:
+		- **model_evaluation_statistics.csv**: output from
+"../code/benchmarking/model_evaluation_F1.py"
+		- **video_explision.mp4**: downloadable video of active parasitism
+	- **_deprecated**: 
+		- outdated code and files from various stages of project development 
