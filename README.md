@@ -28,3 +28,13 @@ status by proportion of pixels in blue channel versus red channel
 	- Extrapolate population dynamics
 		- Changes in infection ratios over time series facilitates inference about shifts in 
 mixed-community population dynamics
+
+- Repository organization: 
+	- "code": 
+		- "benchmarking": includes code for cleaning raw csvs (result of running .ipynb files from 
+"../code/final_models") in "data_cleaning"; model_evaluation.py evaluates performance using 
+"../../data/master_csvs/*.csv"; model_evaluation_results_weight25-75_nonzero0_classes.csv is output from 
+model_evaluation.py
+	- "data": 
+	- "figures":
+	- "deprecated":
