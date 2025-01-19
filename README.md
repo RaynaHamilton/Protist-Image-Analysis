@@ -38,8 +38,8 @@ from
 **../code/final_models**); **model_evaluation.py** evaluates performance using 
 "./master_csvs/*.csv"; **model_evaluation_statistics.csv** is output from 
 model_evaluation_F1.py
-		- **deprecated**: outdated code from various stages of model development
 		- **final_models**: code for final versions of each 6 models
+                - **_deprecated**: outdated code from various stages of model development
 	- **data**: 
 		- **test_images**: set of ".jpg" files that models were trained on (note, models were only evaluated 
 on AS*.csv files)
