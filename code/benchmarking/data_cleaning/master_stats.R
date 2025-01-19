@@ -45,7 +45,10 @@ clean_csvs_fp <- Sys.glob("/Users/kjehickman/Documents/Research/parasites/code/i
 # Charlie ####
 
 # Define the folder path
-folder_path <- "/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/master_csvs/"
+# folder_path <- 
+"/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/master_csvs/"
+gh_folder_path <- 
+"/Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/code/benchmarking/master_csvs/original_masters/"
 
 # Initialize an empty list to store results
 results <- list()

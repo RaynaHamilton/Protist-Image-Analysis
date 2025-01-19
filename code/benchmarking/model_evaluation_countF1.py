@@ -12,9 +12,6 @@ import matplotlib.pyplot as plt
 # READ IN DATA
 
 ## Manual & Model Data Frames
-  # to run using file from GH, change to the following filepath:
-gh_parent_dir = "/Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/code/benchmarking/master_csvs/"
-
 manual_df = pd.read_csv("/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/master_csvs/master_cleaned_manual.csv") # manual
 predicted_df_comb_w = pd.read_csv("/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/master_csvs/combined_w_master_cleaned_na.csv") # comb_w
 predicted_df_comb_wo = pd.read_csv("/Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/master_csvs/combined_wo_master_cleaned_na.csv") # comb_wo

@@ -8,7 +8,8 @@ library(dplyr)
   # Blue:Red Ratio = BR_Ratio, Red Intensity = R_Area, Blue Intensity = B_Area, Proportion Infected = Prop_inf
 # subset to As and Thn..? YES, FOR NOW
 # combine all csv into master directory
-  # /Users/kjehickman/Documents/Research/parasites/code/image_analysis/Jupyter_ImageAnalysis/figures/master_csvs/
+  # /Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/code/benchmarking/master_csvs/original_masters # GH 
+WD
 
 # HLT ####
 
