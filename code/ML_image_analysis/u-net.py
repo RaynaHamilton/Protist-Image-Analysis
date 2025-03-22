@@ -34,7 +34,7 @@ NUM_TEST_IMAGES = 15
     # home of raw images
         # example image name: "AS_C_I_22_3-Image Export-21_c1-2.jpg"
 # mother_directory = "/Users/kjehickman/Documents/Research/parasites/E3/data/micrographs/" # only process directories that start with "2024"
-mother_directory = "/Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/data/test_images/" # contains 15 images used for binary_masks plus 13 others
+mother_directory = "/Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/data/all_images/" # contains 15 images used for binary_masks plus 13 others
     # home of analyzed output images & csvs
 child_directory_image = "/Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/figures/ML_output/images/"
 child_directory_csv = "/Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/figures/ML_output/images/csvs/"
@@ -78,8 +78,10 @@ df_images = pd.DataFrame(img_list, columns=['image_id'])
 # ======================================================
 
 def get_num_cells(x):
-    # split on the _
-    a = x.split('_')
+    # remove '.jpg'
+    x = x.replace('.jpg', '')
+    # split on the -
+    a = x.split('-')
     # choose the third item
     b = a[2] # e.g. C53
     # choose second item onwards and convert to int
@@ -99,9 +101,9 @@ df_images['num_cells'] = df_images['image_id'].apply(get_num_cells)
 
 def check_for_mask(x):
     if x in mask_list:
-        return 'yes'
+        return 'Y'
     else:
-        return 'no'
+        return 'N'
     
 # create a new column called 'has_mask'
 df_images['has_mask'] = df_images['image_id'].apply(check_for_mask)
@@ -112,27 +114,27 @@ df_images['has_mask'] = df_images['image_id'].apply(check_for_mask)
 # Add a column showing how much blur was added to each image
 # ===========================================================
 
-def get_blur_amt(x):
-    # split on the _
-    a = x.split('_')
-    # choose the fourth item
-    b = a[3] # e.g. F1
-    # choose second item onwards and convert to int
-    blur_amt = int(b[1:])
+# def get_blur_amt(x):
+#     # split on the _
+#     a = x.split('_')
+#     # choose the fourth item
+#     b = a[3] # e.g. F1
+#     # choose second item onwards and convert to int
+#     blur_amt = int(b[1:])
     
-    return blur_amt
+#     return blur_amt
 
-# create a new column called 'blur_amt'
-df_images['blur_amt'] = df_images['image_id'].apply(get_blur_amt)
+# # create a new column called 'blur_amt'
+# df_images['blur_amt'] = df_images['image_id'].apply(get_blur_amt)
 
-df_images.head(10)
+# df_images.head(10)
 
 
 # ===========================================================
 # subset to only masks
 # ===========================================================
 
-df_masks = df_images[df_images['has_mask'] == 'yes']
+df_masks = df_images[df_images['has_mask'] == 'Y']
 
 # create a new column called mask_id that is just a copy of image_id
 df_masks['mask_id'] = df_masks['image_id']
@@ -145,6 +147,8 @@ df_masks.shape
 
 # create a test set
 df_test = df_masks.sample(NUM_TEST_IMAGES, random_state=101)
+    # Q: what is "random state"?
+    # A: random_state is the seed used by the random number generator. It can be any integer.
 
 # Reset the index.
 # This is so that we can use loc to access mask id's later.
@@ -158,15 +162,15 @@ test_images_list = list(df_test['image_id'])
 # Note the use of ~ to execute 'not in'.
 df_masks = df_masks[~df_masks['image_id'].isin(test_images_list)]
 
-print(df_masks.shape)
+print(df_masks.shape) # this is currently 0--Q: do we need images that arent in the training set? yes, likely for testing
 print(df_test.shape)
 
 # ===========================================================
 # Inspect an image to see dimensions
 # ===========================================================
 
-sample_image = 'SIMCEPImages_A06_C23_F1_s11_w2.TIF'
-path_image = '../input/bbbc005_v1_images/BBBC005_v1_images/' + sample_image
+sample_image = 'AS_STARTER_2-20240716-C33.jpg' # 'SIMCEPImages_A06_C23_F1_s11_w2.TIF'
+path_image = '/Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/data/all_images/' + sample_image
 
 # read the image using skimage
 image = imread(path_image)
@@ -177,8 +181,8 @@ print('Shape: ', image.shape)
 print('Max pixel value: ', image.max())
 print('Min pixel value: ', image.min())
 
-sample_mask = 'SIMCEPImages_A06_C23_F1_s11_w2.TIF'
-path_mask = '../input/bbbc005_v1_ground_truth/BBBC005_v1_ground_truth/' + sample_mask
+sample_mask = 'AS_STARTER_2-20240716-C33.jpg'
+path_mask = '/Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/data/binary_masks/' + sample_mask
 
 # read the mask using skimage
 mask = imread(path_mask)
@@ -272,6 +276,9 @@ X_test.shape
 
 # ===========================================================
 # DEFINE MODEL ARCHITECTURE
+'''
+Currently 27 CNN layers
+'''
 # ===========================================================
 
 from keras.models import Model, load_model
@@ -292,6 +299,7 @@ inputs = Input((IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
 
 s = Lambda(lambda x: x / 255) (inputs)
 
+# Conv2D parameters: filter number, kernel size, activation is binary (bc output is binary),   
 c1 = Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (s)
 c1 = Dropout(0.1) (c1)
 c1 = Conv2D(16, (3, 3), activation='elu', kernel_initializer='he_normal', padding='same') (c1)

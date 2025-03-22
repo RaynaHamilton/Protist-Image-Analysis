@@ -21,7 +21,7 @@ IMG_HEIGHT = 128
 IMG_WIDTH = 128
 IMG_CHANNELS = 1
 
-NUM_TEST_IMAGES = 15
+NUM_TEST_IMAGES = 25
 
 # Define variables
 # original_x_size,original_y_size=1388,1040 #initial size of input images
@@ -32,13 +32,14 @@ NUM_TEST_IMAGES = 15
 # target_blue_quantile=0.95 #quantile that blue pixel must pass to be kept
 # blue_minimum=60 #minimum blue pixel value to be kept
     # home of raw images
-        # example image name: "AS_C_I_22_3-Image Export-21_c1-2.jpg"
-mother_directory = "/Users/kjehickman/Documents/Research/parasites/E3/data/micrographs/" # only process directories that start with "2024"
+        # example image name: "THN_Starter_5-20240711-C24.jpg"
+# mother_directory = "/Users/kjehickman/Documents/Research/parasites/E3/data/micrographs/" # only process directories that start with "2024"
+mother_directory = "/Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/data/all_images/" 
     # home of analyzed output images & csvs
-child_directory_image = "/Users/kjehickman/Documents/Research/parasites/code/image_analysis/u-net_analysis/output/images/"
-# child_directory_image = "/Users/kjehickman/Documents/Research/parasites/E3/data/hlt_image_analysis_out/classified/"
-child_directory_csv = "/Users/kjehickman/Documents/Research/parasites/code/image_analysis/u-net_analysis/output/csvs/"
-
+# child_directory_image = "/Users/kjehickman/Documents/Research/parasites/code/image_analysis/u-net_analysis/output/images/"
+child_directory_image = "/Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/figures/ML_output/images/"
+# child_directory_csv = "/Users/kjehickman/Documents/Research/parasites/code/image_analysis/u-net_analysis/output/csvs/"
+child_directory_csv = "/Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/figures/ML_output/csvs/"
 
 if not os.path.isdir(child_directory_csv):
     os.mkdir(child_directory_csv)
@@ -48,7 +49,8 @@ if not os.path.isdir(child_directory_image):
 #-------------------------------------------------------------------------------------------------------------
 
 # get a list of files in each folder
-mask_dir = "/Users/kjehickman/Documents/Research/parasites/code/image_analysis/u-net_analysis/data/cell_masks/"
+# mask_dir = "/Users/kjehickman/Documents/Research/parasites/code/image_analysis/u-net_analysis/data/cell_masks/binary_masks/"
+mask_dir = "/Users/kjehickman/Documents/Research/GH/Protist-Image-Analysis/data/binary_masks/"
 
 # img_list = os.listdir('../input/bbbc005_v1_images/BBBC005_v1_images')
 # mask_list = os.listdir('../input/bbbc005_v1_ground_truth/BBBC005_v1_ground_truth')
@@ -74,8 +76,10 @@ df_images = df_images[df_images['image_id'] != '.htaccess']
 # ======================================================
 
 def get_num_cells(x):
+    print(x)
+    x = x.removesuffix('.jpg')
     # split on the _
-    a = x.split('_')
+    a = x.split('-')
     # choose the third item
     b = a[2] # e.g. C53
     # choose second item onwards and convert to int
@@ -108,20 +112,20 @@ df_images['has_mask'] = df_images['image_id'].apply(check_for_mask)
 # Add a column showing how much blur was added to each image
 # ===========================================================
 
-def get_blur_amt(x):
-    # split on the _
-    a = x.split('_')
-    # choose the third item
-    b = a[3] # e.g. F1
-    # choose second item onwards and convert to int
-    blur_amt = int(b[1:])
+# def get_blur_amt(x):
+#     # split on the _
+#     a = x.split('_')
+#     # choose the third item
+#     b = a[3] # e.g. F1
+#     # choose second item onwards and convert to int
+#     blur_amt = int(b[1:])
     
-    return blur_amt
+#     return blur_amt
 
-# create a new column called 'blur_amt'
-df_images['blur_amt'] = df_images['image_id'].apply(get_blur_amt)
+# # create a new column called 'blur_amt'
+# df_images['blur_amt'] = df_images['image_id'].apply(get_blur_amt)
 
-df_images.head(10)
+# df_images.head(10)
 
 
 # ===========================================================
