@@ -1,0 +1,7 @@
+.idea/*
+cell_counts.csv
+.DS_Store
+.vscode/*
+./code/rayna/.ipynb_checkpoints/*
+./code/rayna/unet.ipynb
+./code/rayna/unet_outlines.ipynb
