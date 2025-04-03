@@ -1,7 +1,12 @@
-.idea/*
+.idea
 cell_counts.csv
 .DS_Store
-.vscode/*
-./code/rayna/.ipynb_checkpoints/*
-./code/rayna/unet.ipynb
-./code/rayna/unet_outlines.ipynb
+vscode/*
+code/rayna/.ipynb_checkpoints/*
+code/rayna_2025/unet.ipynb
+code/rayna_2025/split_blobs_with_outlines.ipynb
+code/rayna_2025/unet_outlines.ipynb
+code/rayna_2025/train_outline_unet.ipynb
+predictions/outlines/
+data/intersection_masks/
+.ipynb_checkpoints/
